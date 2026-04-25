@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import logging
 
 import redis
 from functools import cache
 import os
+import json
 
 
 @cache
@@ -42,7 +43,32 @@ class RedisField:
         return redis_connection.getdel(self.name)
 
 
-class RedisDateTimeField(RedisField):
+@dataclass
+class LocalField:
+    name: str
+
+    def get(self):
+        with open("db.json", "r") as f:
+            data = json.load(f)
+        return data.get(self.name)
+
+    def set(self, value, **redis_set_params):
+        with open("db.json", "r") as f:
+            data = json.load(f)
+        data[self.name] = value
+        with open("db.json", "w") as f:
+            json.dump(data, f)
+
+    def delete(self):
+        with open("db.json", "r") as f:
+            data = json.load(f)
+        data.pop(self.name, None)
+        with open("db.json", "w") as f:
+            json.dump(data, f)
+
+
+# class RedisDateTimeField(RedisField):
+class RedisDateTimeField(LocalField):
     FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def get(self) -> datetime | None:

@@ -5,9 +5,11 @@ from telegram.ext import Application
 from message_handlers import get_all_message_handlers
 from message_handlers.base import set_commands
 from utilities.list import join_lists
+from dotenv import load_dotenv
 
 
 def main():
+    load_dotenv()
     if os.getenv("DEBUG"):
         import debugpy
 
