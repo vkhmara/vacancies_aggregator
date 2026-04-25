@@ -1,73 +1,34 @@
 from dataclasses import dataclass
 from datetime import datetime
 import logging
-
-import redis
-from functools import cache
-import os
 import json
 
-
-@cache
-def get_redis_connection() -> redis.Redis:
-    return redis.Redis(
-        host=os.getenv("REDIS_HOST", "localhost"),
-        port=int(os.getenv("REDIS_PORT", "6379")),
-        password=os.getenv("REDIS_PASSWORD"),
-        decode_responses=True,
-    )
-
-
-def save_value_by_key(key: str, value: str) -> bool:
-    return bool(get_redis_connection().set(name=key, value=value))
-
-
-@dataclass
-class RedisField:
-    name: str
-
-    def get(self):
-        redis_connection = get_redis_connection()
-        return redis_connection.get(self.name)
-
-    def set(self, value, **redis_set_params):
-        redis_connection = get_redis_connection()
-        return redis_connection.set(
-            name=self.name,
-            value=value,
-            **redis_set_params,
-        )
-
-    def delete(self):
-        redis_connection = get_redis_connection()
-        return redis_connection.getdel(self.name)
-
+DB_FILE = "db.json"
 
 @dataclass
 class LocalField:
     name: str
 
     def get(self):
-        with open("db.json", "r") as f:
+        with open(DB_FILE, "r") as f:
             data = json.load(f)
         return data.get(self.name)
 
     def set(self, value, **redis_set_params):
-        with open("db.json", "r") as f:
+        with open(DB_FILE, "r") as f:
             data = json.load(f)
         data[self.name] = value
-        with open("db.json", "w") as f:
+        with open(DB_FILE, "w") as f:
             json.dump(data, f)
 
     def delete(self):
-        with open("db.json", "r") as f:
+        with open(DB_FILE, "r") as f:
             data = json.load(f)
         data.pop(self.name, None)
-        with open("db.json", "w") as f:
+        with open(DB_FILE, "w") as f:
             json.dump(data, f)
 
 
-# class RedisDateTimeField(RedisField):
 class RedisDateTimeField(LocalField):
     FORMAT = "%Y-%m-%d %H:%M:%S"
 
