@@ -1,0 +1,5 @@
+If container is stuck, run this command
+sudo systemctl restart docker.socket docker.service
+
+To run tg bot, run
+docker-compose up --build
