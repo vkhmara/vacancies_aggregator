@@ -5,6 +5,7 @@ from typing import Any, Self
 
 from telethon.types import Message
 
+from services.redis import RedisListField
 from services.telegram_client import get_telegram_client
 
 
@@ -27,14 +28,13 @@ class TelegramVacancies:
     CYPRUS_CHANNEL_USERNAME = os.getenv("CYPRUS_CHANNEL_USERNAME")
     CYPRUS_CHANNEL_CYPRUS_VACANCIES_ID = os.getenv("CYPRUS_CHANNEL_CYPRUS_VACANCIES_ID")
 
-    INCLUDED_WORDS = ["python"]
-    EXCLUDED_WORDS = ["igaming", "кроме рб", "casino", "казино", "#cv", "кроме рф и рб"]
-
     def _included_words_check(self, text: str) -> bool:
-        return all(word in text for word in self.INCLUDED_WORDS)
+        included_words = RedisListField(name="included_words").get()
+        return all(word in text for word in included_words)
 
     def _excluded_words_check(self, text: str) -> bool:
-        return all(word not in text for word in self.EXCLUDED_WORDS)
+        excluded_words = RedisListField(name="excluded_words").get()
+        return all(word not in text for word in excluded_words)
 
     def _is_message_fit(self, message: Message) -> bool:
         if not message.message:
