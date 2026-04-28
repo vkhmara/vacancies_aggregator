@@ -78,6 +78,12 @@ async def set_commands(app):
         BotCommandType.STOP: "Stop receiving vacancies",
         BotCommandType.LAST_VACANCY_CHECK_DATE: "Last check date",
         BotCommandType.VACANCIES: "Manually receive last vacancies",
+        BotCommandType.INCLUDED_WORDS: "Show included words",
+        BotCommandType.ADD_INCLUDED_WORD: "Add included word",
+        BotCommandType.DELETE_INCLUDED_WORD: "Delete included word",
+        BotCommandType.EXCLUDED_WORDS: "Show excluded words",
+        BotCommandType.ADD_EXCLUDED_WORD: "Add excluded word",
+        BotCommandType.DELETE_EXCLUDED_WORD: "Delete excluded word",
     }
     commands = [
         BotCommand(

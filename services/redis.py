@@ -64,3 +64,17 @@ class RedisDateTimeField(RedisField):
             value=value.strftime(self.FORMAT),
             **redis_set_params,
         )
+
+
+class RedisListField(RedisField):
+    def get(self) -> list[str]:
+        redis_connection = get_redis_connection()
+        return redis_connection.lrange(self.name, 0, -1)
+
+    def add(self, value: str):
+        redis_connection = get_redis_connection()
+        return redis_connection.rpush(self.name, value)
+
+    def remove(self, value: str):
+        redis_connection = get_redis_connection()
+        return redis_connection.lrem(self.name, 0, value)
