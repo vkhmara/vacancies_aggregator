@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from telegram import LinkPreviewOptions, Update
 from telegram.ext import CommandHandler, ContextTypes
@@ -39,7 +39,7 @@ class VacanciesMessageHandler(BaseMessageHandler):
                 ),
             )
 
-        redis_field.set(datetime.now())
+        redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))
 
         if not found_any:
             await update.message.reply_text(
@@ -83,7 +83,7 @@ class VacancyCheckHandler(BaseMessageHandler):
 
         context.job_queue.run_repeating(
             callback=VacancyCheckJob.handler,
-            interval=timedelta(minutes=5),
+            interval=timedelta(minutes=1),
             chat_id=chat_id,
         )
         await update.message.reply_text("Receiving vacancies started")

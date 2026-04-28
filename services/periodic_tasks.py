@@ -1,6 +1,6 @@
 from telegram import LinkPreviewOptions
 from telegram.ext import ContextTypes
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from telegram.ext import ContextTypes
 from services.redis import RedisDateTimeField
@@ -40,7 +40,9 @@ class VacancyCheckJob(BaseJob):
         )
         last_checked_date = redis_field.get()
         if last_checked_date is None:
-            last_checked_date = datetime.now() - timedelta(weeks=1)
+            last_checked_date = datetime.now(
+                tz=timezone(timedelta(hours=3))
+            ) - timedelta(weeks=1)
         async for vacancy in TelegramVacancies().get_vacancies(
             from_datetime=last_checked_date,
         ):
@@ -52,4 +54,4 @@ class VacancyCheckJob(BaseJob):
                     is_disabled=True,
                 ),
             )
-        redis_field.set(datetime.now())
+        redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))

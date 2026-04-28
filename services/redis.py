@@ -5,6 +5,7 @@ import json
 
 DB_FILE = "db.json"
 
+
 @dataclass
 class LocalField:
     name: str
@@ -30,7 +31,7 @@ class LocalField:
 
 
 class RedisDateTimeField(LocalField):
-    FORMAT = "%Y-%m-%d %H:%M:%S"
+    FORMAT = "%Y-%m-%d %H:%M:%S %z"
 
     def get(self) -> datetime | None:
         value = super().get()
@@ -42,7 +43,7 @@ class RedisDateTimeField(LocalField):
             )  # .astimezone(timezone(timedelta(hours=3)))
         except Exception as e:
             logging.error(
-                f"Unable to parse datetime redis value: key={self.key} value={value}\nError: {e}"
+                f"Unable to parse datetime redis value: key={self.name} value={value}\nError: {e}"
             )
             return None
 
