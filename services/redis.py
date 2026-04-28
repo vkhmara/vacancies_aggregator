@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import logging
 
 import redis
@@ -55,7 +55,7 @@ class RedisDateTimeField(RedisField):
             )  # .astimezone(timezone(timedelta(hours=3)))
         except Exception as e:
             logging.error(
-                f"Unable to parse datetime redis value: key={self.key} value={value}\nError: {e}"
+                f"Unable to parse datetime redis value: key={self.name} value={value}\nError: {e}"
             )
             return None
 
