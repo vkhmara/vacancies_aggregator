@@ -15,7 +15,7 @@ class LocalField:
             data = json.load(f)
         return data.get(self.name)
 
-    def set(self, value, **redis_set_params):
+    def set(self, value):
         with open(DB_FILE, "r") as f:
             data = json.load(f)
         data[self.name] = value
@@ -54,15 +54,20 @@ class RedisDateTimeField(LocalField):
         )
 
 
-class RedisListField(RedisField):
+class RedisListField(LocalField):
     def get(self) -> list[str]:
-        redis_connection = get_redis_connection()
-        return redis_connection.lrange(self.name, 0, -1)
+        value = super().get()
+        return value or []
 
     def add(self, value: str):
-        redis_connection = get_redis_connection()
-        return redis_connection.rpush(self.name, value)
+        field_value = self.get()
+        field_value.append(value)
+        self.set(field_value)
 
     def remove(self, value: str):
-        redis_connection = get_redis_connection()
-        return redis_connection.lrem(self.name, 0, value)
+        field_value = self.get()
+        try:
+            field_value.remove(value)
+            self.set(field_value)
+        except ValueError:
+            pass
