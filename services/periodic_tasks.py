@@ -1,3 +1,5 @@
+import os
+
 from telegram import LinkPreviewOptions
 from telegram.ext import ContextTypes
 from datetime import datetime, timedelta, timezone
@@ -43,15 +45,17 @@ class VacancyCheckJob(BaseJob):
             last_checked_date = datetime.now(
                 tz=timezone(timedelta(hours=3))
             ) - timedelta(weeks=1)
-        async for vacancy in TelegramVacancies().get_vacancies(
-            from_datetime=last_checked_date,
-        ):
-            await bot.send_message(
-                chat_id=job.chat_id,
-                text=cls.vacancy_to_str(vacancy),
-                parse_mode="HTML",
-                link_preview_options=LinkPreviewOptions(
-                    is_disabled=True,
-                ),
-            )
+        channel_usernames = os.getenv("CHANNEL_USERNAMES", "").split(",")
+        for channel_username in channel_usernames:
+            async for vacancy in TelegramVacancies(channel_username=channel_username).get_vacancies(
+                from_datetime=last_checked_date,
+            ):
+                await bot.send_message(
+                    chat_id=job.chat_id,
+                    text=cls.vacancy_to_str(vacancy),
+                    parse_mode="HTML",
+                    link_preview_options=LinkPreviewOptions(
+                        is_disabled=True,
+                    ),
+                )
         redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))

@@ -24,9 +24,9 @@ class Vacancy:
         )
 
 
+@dataclass
 class TelegramVacancies:
-    CYPRUS_CHANNEL_USERNAME = os.getenv("CYPRUS_CHANNEL_USERNAME")
-    CYPRUS_CHANNEL_CYPRUS_VACANCIES_ID = os.getenv("CYPRUS_CHANNEL_CYPRUS_VACANCIES_ID")
+    channel_username: str
 
     def _included_words_check(self, text: str) -> bool:
         included_words = RedisListField(name="included_words").get()
@@ -52,7 +52,7 @@ class TelegramVacancies:
     ):
         telegram_client = get_telegram_client()
         messages = telegram_client.get_messages(
-            self.CYPRUS_CHANNEL_USERNAME,
+            self.channel_username,
             from_datetime=from_datetime,
         )
         async for message in messages:
