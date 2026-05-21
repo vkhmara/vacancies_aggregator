@@ -155,15 +155,8 @@ class BaseWordsMessageHandler(BaseMessageHandler):
             return cls._ADD_WORD_STATE
 
         chat_settings = cls._chat_settings()
-        words = chat_settings.get_words(username, cls.WORDS_FIELD)
-        if value in words:
-            await update.message.reply_text(
-                f"'{value}' is already in {cls.WORDS_TYPE} words for '{username}'.",
-                reply_markup=ReplyKeyboardRemove(),
-            )
-            return ConversationHandler.END
-
-        chat_settings.add_word(username, cls.WORDS_FIELD, value)
+        new_words = value.split(";")
+        chat_settings.add_words(username, cls.WORDS_FIELD, new_words)
         await update.message.reply_text(
             f"Added '{value}' to {cls.WORDS_TYPE} words for '{username}'.",
             reply_markup=ReplyKeyboardRemove(),

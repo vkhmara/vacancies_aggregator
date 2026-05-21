@@ -108,6 +108,18 @@ class ChatSettingsField(LocalField):
         self.set(chats)
         return True
 
+    def add_words(self, username: str, words_key: str, words: list[str]):
+        chats = self.get()
+        index = self._find_chat_index(username)
+        if index is None:
+            return
+        words_list = chats[index].setdefault(words_key, [])
+        for word in words:
+            if word in words_list:
+                continue
+            words_list.append(word)
+        self.set(chats)
+
     def remove_word(self, username: str, words_key: str, word: str) -> bool:
         chats = self.get()
         index = self._find_chat_index(username)
