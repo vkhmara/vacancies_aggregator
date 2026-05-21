@@ -13,3 +13,6 @@ class BotCommandType(str, Enum):
     EXCLUDED_WORDS = "excluded_words"
     ADD_EXCLUDED_WORD = "add_excluded_word"
     DELETE_EXCLUDED_WORD = "delete_excluded_word"
+    CHATS = "chats"
+    ADD_CHAT = "add_chat"
+    DELETE_CHAT = "delete_chat"

@@ -78,3 +78,76 @@ class RedisListField(RedisField):
     def remove(self, value: str):
         redis_connection = get_redis_connection()
         return redis_connection.lrem(self.name, 0, value)
+
+
+class ChatSettingsField(RedisListField):
+    def get(self) -> list[dict]:
+        value = super().get()
+        return value or []
+
+    def set(self, value: list[dict]):
+        return super().set(value)
+
+    def get_usernames(self) -> list[str]:
+        return [chat["username"] for chat in self.get() if chat.get("username")]
+
+    def _find_chat_index(self, username: str) -> int | None:
+        for index, chat in enumerate(self.get()):
+            if chat.get("username") == username:
+                return index
+        return None
+
+    def get_words(self, username: str, words_key: str) -> list[str]:
+        index = self._find_chat_index(username)
+        if index is None:
+            return []
+        return self.get()[index].get(words_key) or []
+
+    def add_word(self, username: str, words_key: str, word: str) -> bool:
+        chats = self.get()
+        index = self._find_chat_index(username)
+        if index is None:
+            return False
+        words = chats[index].setdefault(words_key, [])
+        if word in words:
+            return False
+        words.append(word)
+        self.set(chats)
+        return True
+
+    def remove_word(self, username: str, words_key: str, word: str) -> bool:
+        chats = self.get()
+        index = self._find_chat_index(username)
+        if index is None:
+            return False
+        words = chats[index].get(words_key) or []
+        try:
+            words.remove(word)
+        except ValueError:
+            return False
+        chats[index][words_key] = words
+        self.set(chats)
+        return True
+
+    def add_chat(self, username: str) -> bool:
+        if self._find_chat_index(username) is not None:
+            return False
+        chats = self.get()
+        chats.append(
+            {
+                "username": username,
+                "included_words": [],
+                "excluded_words": [],
+            }
+        )
+        self.set(chats)
+        return True
+
+    def remove_chat(self, username: str) -> bool:
+        chats = self.get()
+        index = self._find_chat_index(username)
+        if index is None:
+            return False
+        chats.pop(index)
+        self.set(chats)
+        return True
