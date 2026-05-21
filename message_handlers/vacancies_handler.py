@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler, ContextTypes
 from enums.settings import BotCommandType
 from message_handlers.base import BaseMessageHandler, state_handler
 from services.periodic_tasks import VacancyCheckJob
-from services.redis import RedisDateTimeField
+from services.redis import ChatSettingsField, RedisDateTimeField
 from services.vacancies import TelegramVacancies, Vacancy
 from utilities.config import CONFIG
 from utilities.datetime import datetime_to_text
@@ -13,8 +13,15 @@ from utilities.datetime import datetime_to_text
 
 class VacanciesMessageHandler(BaseMessageHandler):
     @classmethod
-    def vacancy_to_str(cls, vacancy: Vacancy):
-        return f'Date: {datetime_to_text(vacancy.date)}\n<a href="{vacancy.link}">Link</a>\n----\n<blockquote expandable>{vacancy.text}</blockquote>'
+    def vacancy_to_str(cls, vacancy: Vacancy, channel_username: str):
+        return "\n".join(
+            [
+                f"Date: {datetime_to_text(vacancy.date)}",
+                f'<a href="{vacancy.link}">Link</a> [@{channel_username}]',
+                "----",
+                f"<blockquote expandable>{vacancy.text}</blockquote>",
+            ]
+        )
 
     @classmethod
     @state_handler
@@ -26,18 +33,32 @@ class VacanciesMessageHandler(BaseMessageHandler):
         redis_field = RedisDateTimeField(
             name=CONFIG.REDIS.LAST_VACANCY_CHECKED_DATE_FIELD
         )
-        found_any = False
-        async for vacancy in TelegramVacancies().get_vacancies(
-            from_datetime=redis_field.get()
-        ):
-            found_any = True
-            await update.message.reply_text(
-                text=cls.vacancy_to_str(vacancy),
-                parse_mode="HTML",
-                link_preview_options=LinkPreviewOptions(
-                    is_disabled=True,
-                ),
+        start_date = redis_field.get()
+        if start_date is None:
+            start_date = datetime.now(tz=timezone(timedelta(hours=3))) - timedelta(
+                days=3
             )
+        found_any = False
+        for chat in ChatSettingsField(name="chat_settings").get():
+            channel_username = chat.get("username")
+            if not channel_username:
+                continue
+            async for vacancy in TelegramVacancies(
+                channel_username=channel_username,
+                included_words=chat.get("included_words") or [],
+                excluded_words=chat.get("excluded_words") or [],
+            ).get_vacancies(from_datetime=start_date):
+                found_any = True
+                await update.message.reply_text(
+                    text=cls.vacancy_to_str(
+                        vacancy=vacancy,
+                        channel_username=channel_username,
+                    ),
+                    parse_mode="HTML",
+                    link_preview_options=LinkPreviewOptions(
+                        is_disabled=True,
+                    ),
+                )
 
         redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))
 
@@ -60,7 +81,14 @@ class VacanciesMessageHandler(BaseMessageHandler):
 class VacancyCheckHandler(BaseMessageHandler):
     @classmethod
     def vacancy_to_str(cls, vacancy: Vacancy):
-        return f'Date: {datetime_to_text(vacancy.date)}\n<a href="{vacancy.link}">Link</a>\n----\n{vacancy.text}'
+        return "\n".join(
+            [
+                f"Date: {datetime_to_text(vacancy.date)}",
+                f'<a href="{vacancy.link}">Link</a>',
+                "----",
+                vacancy.text or "",
+            ]
+        )
 
     @classmethod
     @state_handler

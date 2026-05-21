@@ -84,6 +84,9 @@ async def set_commands(app):
         BotCommandType.EXCLUDED_WORDS: "Show excluded words",
         BotCommandType.ADD_EXCLUDED_WORD: "Add excluded word",
         BotCommandType.DELETE_EXCLUDED_WORD: "Delete excluded word",
+        BotCommandType.CHATS: "Show chat usernames",
+        BotCommandType.ADD_CHAT: "Add chat username",
+        BotCommandType.DELETE_CHAT: "Delete chat username",
     }
     commands = [
         BotCommand(
