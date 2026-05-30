@@ -79,6 +79,8 @@ class VacanciesMessageHandler(BaseMessageHandler):
 
 
 class VacancyCheckHandler(BaseMessageHandler):
+    JOB_NAME_TEMPLATE = "{chat_id}-vacancies_check"
+
     @classmethod
     def vacancy_to_str(cls, vacancy: Vacancy):
         return "\n".join(
@@ -105,7 +107,8 @@ class VacancyCheckHandler(BaseMessageHandler):
             )
             return
 
-        current_jobs = context.job_queue.get_jobs_by_name(str(chat_id))
+        job_name = cls.JOB_NAME_TEMPLATE.format(chat_id=chat_id)
+        current_jobs = context.job_queue.get_jobs_by_name(job_name)
         for job in current_jobs:
             job.schedule_removal()
 
@@ -113,6 +116,7 @@ class VacancyCheckHandler(BaseMessageHandler):
             callback=VacancyCheckJob.handler,
             interval=timedelta(minutes=1),
             chat_id=chat_id,
+            name=job_name,
         )
         await update.message.reply_text("Receiving vacancies started")
 
@@ -130,7 +134,9 @@ class VacancyCheckHandler(BaseMessageHandler):
             )
             return
 
-        current_jobs = context.job_queue.get_jobs_by_name(str(chat_id))
+        current_jobs = context.job_queue.get_jobs_by_name(
+            cls.JOB_NAME_TEMPLATE.format(chat_id=chat_id),
+        )
         for job in current_jobs:
             job.schedule_removal()
         await update.message.reply_text("Receiving vacancies stopped")
