@@ -31,7 +31,6 @@ class VacanciesMessageHandler(BaseMessageHandler):
         )
         return f"{header}\n{vacancy_format.format(vacancy.text[:max_first_block_len])}"
 
-
     @classmethod
     @state_handler
     async def __vacancies(
@@ -123,7 +122,7 @@ class VacancyCheckHandler(BaseMessageHandler):
 
         context.job_queue.run_repeating(
             callback=VacancyCheckJob.handler,
-            interval=timedelta(minutes=1),
+            interval=timedelta(minutes=5),
             chat_id=chat_id,
             name=job_name,
         )

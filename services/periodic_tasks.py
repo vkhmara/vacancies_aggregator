@@ -1,6 +1,8 @@
+import asyncio
 import itertools
 
 from telegram import LinkPreviewOptions, constants
+from telegram.error import RetryAfter
 from telegram.ext import ContextTypes
 from datetime import datetime, timedelta, timezone
 
@@ -60,15 +62,33 @@ class VacancyCheckJob(BaseJob):
                 included_words=chat.get("included_words", []),
                 excluded_words=chat.get("excluded_words", []),
             ).get_vacancies(from_datetime=last_checked_date):
-                await bot.send_message(
-                    chat_id=job.chat_id,
-                    text=cls.vacancy_to_str(
-                        vacancy=vacancy,
-                        channel_username=channel_username,
-                    ),
-                    parse_mode="HTML",
-                    link_preview_options=LinkPreviewOptions(
-                        is_disabled=True,
-                    ),
-                )
+                try:
+                    await bot.send_message(
+                        chat_id=job.chat_id,
+                        text=cls.vacancy_to_str(
+                            vacancy=vacancy,
+                            channel_username=channel_username,
+                        ),
+                        parse_mode="HTML",
+                        link_preview_options=LinkPreviewOptions(
+                            is_disabled=True,
+                        ),
+                    )
+                except RetryAfter as e:
+                    # e.retry_after contains the exact seconds Telegram requires you to wait
+                    print(f"Flood limit hit. Sleeping for {e.retry_after} seconds.")
+                    await asyncio.sleep(e.retry_after)
+                    # Retry the message send
+                    await bot.send_message(
+                        chat_id=job.chat_id,
+                        text=cls.vacancy_to_str(
+                            vacancy=vacancy,
+                            channel_username=channel_username,
+                        ),
+                        parse_mode="HTML",
+                        link_preview_options=LinkPreviewOptions(
+                            is_disabled=True,
+                        ),
+                    )
+
         redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))
