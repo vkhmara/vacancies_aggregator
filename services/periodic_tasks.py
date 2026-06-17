@@ -18,7 +18,7 @@ class BaseJob:
 
 class VacancyCheckJob(BaseJob):
     @classmethod
-    def vacancy_to_str(cls, vacancy: Vacancy, channel_username: str) -> list[str]:
+    def vacancy_to_str(cls, vacancy: Vacancy, channel_username: str) -> str:
         header = "\n".join(
             [
                 f"Date: {datetime_to_text(vacancy.date)}",
@@ -26,7 +26,6 @@ class VacancyCheckJob(BaseJob):
                 "----",
             ]
         )
-        texts = []
         vacancy_format = "<blockquote expandable>{0}</blockquote>"
         max_first_block_len = (
             constants.MessageLimit.MAX_TEXT_LENGTH
@@ -34,17 +33,7 @@ class VacancyCheckJob(BaseJob):
             - 1
             - len(vacancy_format.format(""))
         )
-        texts.append(
-            f"{header}\n{vacancy_format.format(vacancy.text[:max_first_block_len])}"
-        )
-        if len(vacancy.text) <= max_first_block_len:
-            return texts
-        for batched_message in itertools.batched(
-            vacancy.text[max_first_block_len:],
-            constants.MessageLimit.MAX_TEXT_LENGTH - len(vacancy_format.format("")),
-        ):
-            texts.append(vacancy_format.format(batched_message))
-        return texts
+        return f"{header}\n{vacancy_format.format(vacancy.text[:max_first_block_len])}"
 
     @classmethod
     async def handler(
@@ -71,16 +60,15 @@ class VacancyCheckJob(BaseJob):
                 included_words=chat.get("included_words", []),
                 excluded_words=chat.get("excluded_words", []),
             ).get_vacancies(from_datetime=last_checked_date):
-                for message_batch in cls.vacancy_to_str(
-                    vacancy=vacancy,
-                    channel_username=channel_username,
-                ):
-                    await bot.send_message(
-                        chat_id=job.chat_id,
-                        text=message_batch,
-                        parse_mode="HTML",
-                        link_preview_options=LinkPreviewOptions(
-                            is_disabled=True,
-                        ),
-                    )
+                await bot.send_message(
+                    chat_id=job.chat_id,
+                    text=cls.vacancy_to_str(
+                        vacancy=vacancy,
+                        channel_username=channel_username,
+                    ),
+                    parse_mode="HTML",
+                    link_preview_options=LinkPreviewOptions(
+                        is_disabled=True,
+                    ),
+                )
         redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))

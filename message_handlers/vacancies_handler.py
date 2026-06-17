@@ -14,7 +14,7 @@ from utilities.datetime import datetime_to_text
 
 class VacanciesMessageHandler(BaseMessageHandler):
     @classmethod
-    def vacancy_to_str(cls, vacancy: Vacancy, channel_username: str) -> list[str]:
+    def vacancy_to_str(cls, vacancy: Vacancy, channel_username: str) -> str:
         header = "\n".join(
             [
                 f"Date: {datetime_to_text(vacancy.date)}",
@@ -22,7 +22,6 @@ class VacanciesMessageHandler(BaseMessageHandler):
                 "----",
             ]
         )
-        texts = []
         vacancy_format = "<blockquote expandable>{0}</blockquote>"
         max_first_block_len = (
             constants.MessageLimit.MAX_TEXT_LENGTH
@@ -30,17 +29,8 @@ class VacanciesMessageHandler(BaseMessageHandler):
             - 1
             - len(vacancy_format.format(""))
         )
-        texts.append(
-            f"{header}\n{vacancy_format.format(vacancy.text[:max_first_block_len])}"
-        )
-        if len(vacancy.text) <= max_first_block_len:
-            return texts
-        for batched_message in itertools.batched(
-            vacancy.text[max_first_block_len:],
-            constants.MessageLimit.MAX_TEXT_LENGTH - len(vacancy_format.format("")),
-        ):
-            texts.append(vacancy_format.format(batched_message))
-        return texts
+        return f"{header}\n{vacancy_format.format(vacancy.text[:max_first_block_len])}"
+
 
     @classmethod
     @state_handler
@@ -68,17 +58,16 @@ class VacanciesMessageHandler(BaseMessageHandler):
                 excluded_words=chat.get("excluded_words") or [],
             ).get_vacancies(from_datetime=start_date):
                 found_any = True
-                for message_batch in cls.vacancy_to_str(
-                    vacancy=vacancy,
-                    channel_username=channel_username,
-                ):
-                    await update.message.reply_text(
-                        text=message_batch,
-                        parse_mode="HTML",
-                        link_preview_options=LinkPreviewOptions(
-                            is_disabled=True,
-                        ),
-                    )
+                await update.message.reply_text(
+                    text=cls.vacancy_to_str(
+                        vacancy=vacancy,
+                        channel_username=channel_username,
+                    ),
+                    parse_mode="HTML",
+                    link_preview_options=LinkPreviewOptions(
+                        is_disabled=True,
+                    ),
+                )
 
         redis_field.set(datetime.now(tz=timezone(timedelta(hours=3))))
 
